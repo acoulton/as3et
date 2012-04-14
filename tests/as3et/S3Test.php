@@ -24,8 +24,6 @@ class As3et_S3Test extends Unittest_TestCase
 			'secret' => 'secret-foo'
 		)));
 
-		//print_r(Kohana::$config->load('as3et.s3'));
-
 		// Create the S3 object
 		$s3 = As3et_S3::factory()->s3();
 

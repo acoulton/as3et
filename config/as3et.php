@@ -5,8 +5,8 @@ return array(
 	's3' => array(
 		'region' => NULL,
 		'bucket' => NULL,
-		'key'	 => NULL,
-		'secret' => NULL,
+		'key'	 => 'YOUR_AWS_KEY',
+		'secret' => 'YOUR_AWS_SECRET',
 	),
 	'blacklist' => array(
 	),
