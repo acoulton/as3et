@@ -9,6 +9,8 @@ env:
 before_script:
   # Create a kohana environment
   - php ./dev/ko_sandbox.php
+  # Checkout vendor submodule
+  - git submodule update --init --recursive
 
-# Run the Mimic tests
+# Run the As3et tests
 script: phpunit --bootstrap=$KO_SANDBOX/modules/unittest/bootstrap.php --group=as3et $KO_SANDBOX/modules/unittest/tests.php
