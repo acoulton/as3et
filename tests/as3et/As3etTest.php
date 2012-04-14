@@ -24,12 +24,12 @@ class As3et_As3etTest extends Unittest_TestCase
 			array(
 				As3et::MODE_LOCAL,
 				'foo.bar',
-				URL::base(NULL, FALSE).'foo.bar'
+				'assets/foo.bar'
 			),
 			array(
 				As3et::MODE_S3,
 				'foo.bar',
-				'http://foo.'.AmazonS3::REGION_EU_W1.'/sha/foo.bar'),
+				'http://foo.s3-eu-west-1.amazonaws.com/sha/foo.bar'),
 			array(
 				As3et::MODE_LOCAL,
 				'http://some.other.server/asset.foo',
@@ -53,10 +53,12 @@ class As3et_As3etTest extends Unittest_TestCase
 	{
 		$config = Kohana::$config->load('as3et');
 		$config->set('mode', $mode);
-		$config->set('s3.bucket', 'foo');
-		$config->set('s3.region', AmazonS3::REGION_EU_W1);
+		$config->set('s3', Arr::merge($config->get('s3'), array(
+			'bucket' => 'foo',
+			'region' => 's3-eu-west-1.amazonaws.com'
+		)));
 		
-		$as3et = $this->getMock('As3et', array('url'));
+		$as3et = $this->getMock('As3et', array('current_sha'));
 		$as3et->expects($this->any())
 				->method('current_sha')
 				->will($this->returnValue('sha'));

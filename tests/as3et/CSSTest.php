@@ -12,7 +12,16 @@
  * @copyright  (c) 2012 Ingenerator
  * @license    http://kohanaframework.org/license
  */
-class As3et_CSSTest extends Asset_CollectionBaseTest
+
+class As3et_CSSTest extends As3et_BaseCollectionTest
 {
-	protected $test_class = 'As3et_CSS';
+	
+	/**
+	 * Returns an instance of the class to test
+	 * @return As3et_CSS
+	 */
+	protected function get_class($as3et)
+	{
+		return new As3et_CSS($as3et,'foo.bar');
+	}
 }

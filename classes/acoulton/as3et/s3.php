@@ -13,12 +13,19 @@
 class ACoulton_As3et_S3
 {
 	/**
+	 * Local storage
+	 * @var AmazonS3
+	 */
+	protected $_s3 = NULL;
+
+	/**
 	 * Creates a new instance of As3et_S3
 	 *
 	 * @return As3et_S3
 	 */
 	public static function factory()
 	{
+		require_once(Kohana::find_file('vendor', 'aws-sdk-for-php/sdk.class'));
 		return new As3et_S3;
 	}
 
@@ -30,6 +37,16 @@ class ACoulton_As3et_S3
 	 */
 	public function s3()
 	{
+		if ( ! $this->_s3)
+		{
+			// Load the config and instantiate Amazon S3
+			$config = Kohana::$config->load('as3et.s3');
+			$this->_s3 = new AmazonS3(array(
+				'key' => $config['key'],
+				'secret' => $config['secret']
+			));
+		}
 
+		return $this->_s3;
 	}
 }

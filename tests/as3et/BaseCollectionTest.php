@@ -12,7 +12,7 @@
  * @copyright  (c) 2012 Ingenerator
  * @license    http://kohanaframework.org/license
  */
-abstract class As3et_CollectionBaseTest extends Unittest_TestCase
+abstract class As3et_BaseCollectionTest extends Unittest_TestCase
 {
 
 	/**
@@ -51,11 +51,11 @@ abstract class As3et_CollectionBaseTest extends Unittest_TestCase
 		$as3et->expects($this->once())
 				->method('url')
 				->with('foo.bar')
-				->will($this->returnValue('/foo.bar'));
+				->will($this->returnValue('foo.bar'));
 
 		$class = $this->get_class($as3et, 'foo.bar');
 
-		$this->assertEquals('/foo.bar', $class->tag());
+		$this->assertContains('="'.URL::base().'foo.bar"', $class->tag());
 	}
 
 	/**
