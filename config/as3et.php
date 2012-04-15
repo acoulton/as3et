@@ -12,5 +12,6 @@ return array(
 	),
 	'asset_headers' => array(		
 	),
+	'default_mime_type' => 'application/octet-stream',
 	'revision_file' => APPPATH.'config/as3et_current_revision.php',
 );

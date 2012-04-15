@@ -4,6 +4,8 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 {
 	protected $_s3 = NULL;
 	
+	protected $_git_sha = NULL;
+	
 	public function execute(array $config)
 	{
 		// Get the current git sha, and write to disk
@@ -115,7 +117,39 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 	 */
 	public function current_git_sha()
 	{
-		return trim(`git rev-parse --short HEAD`, "\r\n");
+		if ($this->_git_sha === NULL)
+		{
+			$this->_git_sha = trim(`git rev-parse --short HEAD`, "\r\n");
+		}
+
+		return $this->_git_sha;
+	}
+
+	/**
+	 * Upload a file to AmazonS3, prefixing the path with the current git SHA
+	 * for versioning and setting headers based on the as3et configuration.
+	 *
+	 * @param string $file		 Asset path to set on S3
+	 * @param string $disk_path  Absolute path to the file on disk to upload
+	 */
+	public function upload_file($file, $disk_path)
+	{
+		$config = Kohana::$config->load('as3et');
+
+		if ( ! $mime = File::mime_by_ext(strtolower(pathinfo($disk_path, PATHINFO_EXTENSION))))
+		{
+			$mime = $config->get('default_mime_type');
+		}
+
+		$result = $this->s3()
+			->create_object(
+				$config['s3']['bucket'],
+				$this->current_git_sha().'/'.$file,
+				array(
+					'contentType' => $mime,
+					'fileUpload' => $disk_path,
+					'headers' => $config->get('asset_headers', array()),
+				));		
 	}
 
 }
