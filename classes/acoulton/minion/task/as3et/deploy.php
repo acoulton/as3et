@@ -119,6 +119,10 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 	{
 		if ($this->_git_sha === NULL)
 		{
+			exec('git rev-parse --short HEAD 2>&1', $output, $error);
+			if ($error)
+				throw new Exception("git returned status code $error".PHP_EOL."---".implode(PHP_EOL, $output));
+
 			$this->_git_sha = trim(`git rev-parse --short HEAD`, "\r\n");
 		}
 
