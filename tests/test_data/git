@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo $@ > $CLI_ASSERT_FILE
+echo "abcdefg"

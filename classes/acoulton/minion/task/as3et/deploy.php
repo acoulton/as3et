@@ -109,4 +109,13 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 
 	}
 
+	/**
+	 * Gets the current git SHA for version tracking
+	 * @return string
+	 */
+	public function current_git_sha()
+	{
+		return trim(`git rev-parse --short HEAD`, "\r\n");
+	}
+
 }

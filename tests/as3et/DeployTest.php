@@ -16,6 +16,8 @@ class As3et_DeployTest extends Unittest_TestCase
 {
 	protected static $old_modules = array();
 
+	protected static $old_path = NULL;
+
 	/**
 	 * Return the location on disk of the test_data module files
 	 *
@@ -32,7 +34,8 @@ class As3et_DeployTest extends Unittest_TestCase
 	public static function setupBeforeClass()
 	{
 		parent::setUpBeforeClass();
-		
+
+		// Set Kohana modules
 		self::$old_modules = Kohana::modules();
 
 		$new_modules = self::$old_modules+array(
@@ -40,16 +43,52 @@ class As3et_DeployTest extends Unittest_TestCase
 		);
 		Kohana::modules($new_modules);
 
+		// Set environment path (for mocking git)
+		self::$old_path = $_SERVER['PATH'];
+		putenv('PATH='.self::test_data_path().':'.$_SERVER['PATH']);
+		putenv('CLI_ASSERT_FILE='.self::test_data_path().'/git_assert_file');
+
 	}
 
 	/**
-	 * Restores the module list
+	 * Restores the module list and path
 	 */
 	public static function teardownAfterClass()
 	{
 		parent::tearDownAfterClass();
 		
 		Kohana::modules(self::$old_modules);
+		putenv('PATH='.self::$old_path);
+	}
+
+	/**
+	 * Cleanup the temporary file used to assert git command line arguments
+	 */
+	protected function clear_assert_file()
+	{
+		$git_assert_file = self::test_data_path().'/git_assert_file';
+		if (file_exists($git_assert_file))
+		{
+			unlink($git_assert_file);
+		}
+	}
+
+	/**
+	 * Clear the assert file
+	 */
+	public function setUp()
+	{
+		parent::setUp();
+		$this->clear_assert_file();
+	}
+
+	/**
+	 * Clear the assert file
+	 */
+	public function tearDown()
+	{
+		parent::tearDown();
+		$this->clear_assert_file();
 	}
 
 	/**
@@ -125,6 +164,20 @@ class As3et_DeployTest extends Unittest_TestCase
 		{
 			$this->assertArrayHasKey($expect_found, $files);
 		}
+	}
+
+	/**
+	 * Verify that the task can load the current HEAD sha reference
+	 */
+	public function test_should_get_current_git_revision()
+	{
+		$task = new Minion_Task_As3et_Deploy;
+		$sha = $task->current_git_sha();
+
+		$git_assert = trim(file_get_contents(self::test_data_path().'/git_assert_file'),"\r\n");		
+		$this->assertEquals('rev-parse --short HEAD',$git_assert);
+		$this->assertEquals('abcdefg', $sha);
+
 	}
 
 	public function test_should_upload_files_with_correct_mime_types()
