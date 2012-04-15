@@ -174,10 +174,9 @@ class As3et_DeployTest extends Unittest_TestCase
 		$task = new Minion_Task_As3et_Deploy;
 		$sha = $task->current_git_sha();
 
-		$git_assert = trim(file_get_contents(self::test_data_path().'/git_assert_file'),"\r\n");		
-		$this->assertEquals('rev-parse --short HEAD',$git_assert);
 		$this->assertEquals('abcdefg', $sha);
-
+		$git_assert = trim(file_get_contents(self::test_data_path().'/git_assert_file'),"\r\n");
+		$this->assertEquals('rev-parse --short HEAD',$git_assert);
 	}
 
 	/**
