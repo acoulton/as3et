@@ -54,6 +54,11 @@ class ACoulton_As3et
 		return $protocol.$host.'/'.$this->current_sha().'/'.$url;
 	}
 
+	public function set_deploy_sha($sha)
+	{
+		
+	}
+
 	public function current_sha()
 	{		
 		return '';

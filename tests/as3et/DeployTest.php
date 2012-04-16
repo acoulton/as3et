@@ -27,7 +27,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	{
 		return realpath(dirname(__FILE__).'/../test_data/');
 	}
-	
+
 	/**
 	 * Add a module containing test asset files
 	 */
@@ -56,7 +56,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	public static function teardownAfterClass()
 	{
 		parent::tearDownAfterClass();
-		
+
 		Kohana::modules(self::$old_modules);
 		putenv('PATH='.self::$old_path);
 	}
@@ -115,7 +115,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	public function test_should_find_assets_to_upload()
 	{
 		$test_path = self::test_data_path();
-		
+
 		$task = new Minion_Task_As3et_Deploy;
 		$files = $task->get_asset_files();
 
@@ -150,7 +150,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	public function test_should_respect_blacklist_of_paths_to_ignore($blacklist, $expect_hidden, $expect_found)
 	{
 		$test_path = self::test_data_path();
-		Kohana::$config->load('as3et')->set('blacklist', $blacklist);		
+		Kohana::$config->load('as3et')->set('blacklist', $blacklist);
 
 		$task = new Minion_Task_As3et_Deploy;
 		$files = $task->get_asset_files();
@@ -182,7 +182,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	/**
 	 * Helper method to mock an S3 object expecting a call to create_object with
 	 * given params.
-	 * 
+	 *
 	 * @param string|PHPUnit_Framework_Constraint $bucket
 	 * @param string|PHPUnit_Framework_Constraint $file
 	 * @param array|PHPUnit_Framework_Constraint $options
@@ -191,8 +191,9 @@ class As3et_DeployTest extends Unittest_TestCase
 	 */
 	protected function _mock_s3_create_object($bucket, $file, $options, $success)
 	{
-		$s3 = $this->getMock('AmazonS3', array(), array(), '', FALSE);
-		$s3->expects($this->once())
+		$s3 = $this->getMock('AmazonS3', array('batch','create_object','send'), array(), '', FALSE);
+
+		$s3->expects($this->atLeastOnce())
 			->method('create_object')
 			->with($bucket, $file, $options)
 			->will($this->returnValue(NULL));
@@ -202,6 +203,7 @@ class As3et_DeployTest extends Unittest_TestCase
 
 	/**
 	 * Data provider for test_should_upload_files_with_correct_mime_types
+	 *
 	 * @return array
 	 */
 	public function provider_should_upload_files_with_correct_mime_types()
@@ -217,6 +219,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	 * Verifies that an appropriate mime-type header is sent with the files
 	 *
 	 * @dataProvider provider_should_upload_files_with_correct_mime_types
+	 * @depends test_should_support_s3_injection
 	 * @param string $file  Relative asset filename
 	 * @param string $path  Path to the file on disk
 	 * @param string $mime  Expected mime-type
@@ -237,6 +240,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	/**
 	 * Verifies that the S3 path is set to the git SHA followed by the asset
 	 * file path, and that the bucket is set correctly.
+	 * @depends test_should_support_s3_injection
 	 */
 	public function test_should_upload_to_git_versioned_path_in_bucket()
 	{
@@ -272,6 +276,7 @@ class As3et_DeployTest extends Unittest_TestCase
 	/**
 	 * Verifies that the asset headers specified in the as3et config are sent
 	 * with the files.
+	 * @depends test_should_support_s3_injection
 	 */
 	public function test_should_upload_files_with_configurable_headers()
 	{
@@ -290,14 +295,130 @@ class As3et_DeployTest extends Unittest_TestCase
 		$task->upload_file('css/foo.css', self::test_data_path().'/assets/css/foo.css');
 	}
 
-	public function test_should_store_deployed_revision_for_as3et_prefixing()
+	/**
+	 * Verifies that the deploy task can have an As3et instance injected into it
+	 */
+	public function test_should_support_as3et_injection()
 	{
+		$task = new Minion_Task_As3et_Deploy;
 
+		$this->assertInstanceOf('As3et', $task->as3et(), 'Creates an As3et instance by default');
+
+		$as3et = $this->getMock('As3et', array(), array(), '', FALSE);
+		$task->as3et($as3et);
+		$as3et_returned = $task->as3et();
+
+		$this->assertSame($as3et, $as3et_returned);
 	}
 
-	public function test_should_throw_exception_on_failed_deploy()
+	/**
+	 * Verifies that the deployed revision is passed to As3et for storage if
+	 * deployment succeeds
+	 *
+	 * @depends test_should_support_as3et_injection
+	 * @depends test_should_support_s3_injection
+	 */
+	public function test_good_deploy_should_upload_batch_and_store_revision()
 	{
-		
+		// Mock As3et - SHA should be stored once
+		$as3et = $this->getMock('As3et',array('set_deploy_sha'));
+		$as3et->expects($this->once())
+				->method('set_deploy_sha')
+				->with('abcdefg');
+
+		// Mock S3 and response
+		$s3 = $this->getMock('AmazonS3', array('batch','create_object','send'), array(), '', FALSE);
+
+		$s3_response = $this->getMock('CFArray');
+		$s3_response->expects($this->any())
+					->method('areOK')
+					->will($this->returnValue(TRUE));
+
+		$s3->expects($this->at(0))
+				->method('batch')
+				->will($this->returnValue($s3));
+
+		$s3->expects($this->once())
+				->method('send')
+				->will($this->returnValue($s3_response));
+
+		// Shunt the task class so we can mock key methods
+		$task = $this->getMock('Minion_Task_As3et_Deploy', array('current_git_sha','get_asset_files','write','upload_file'));
+		$task->as3et($as3et);
+		$task->s3($s3);
+
+		$task->expects($this->atLeastOnce())
+				->method('current_git_sha')
+				->will($this->returnValue('abcdefg'));
+
+		$task->expects($this->once())
+				->method('get_asset_files')
+				->will($this->returnValue(array(
+					'css/foo.css' => self::test_data_path('assets/css/foo.css'),
+					'foo.js' => self::test_data_path('assets/css/foo.js'),
+				)));
+
+		$task->expects($this->exactly(2))
+				->method('upload_file')
+				->withAnyParameters();
+
+		$task->execute(array());
+	}
+
+	/**
+	 * Verifies that when a deployment fails, As3et will not store the revision
+	 *
+	 * @depends test_should_support_as3et_injection
+	 * @depends test_should_support_s3_injection
+	 */
+	public function test_bad_deploy_should_not_store_revision_and_should_throw_exception()
+	{
+		// Mock As3et
+		$as3et = $this->getMock('As3et');
+		$as3et->expects($this->never())
+				->method('set_deploy_sha');
+
+		// Mock S3
+		$s3 = $this->_mock_s3_create_object($this->anything(), $this->anything(), $this->anything(), TRUE);
+
+		$s3_response = $this->getMock('CFArray');
+		$s3_response->expects($this->any())
+					->method('areOK')
+					->will($this->returnValue(FALSE));
+
+		$s3->expects($this->once())
+				->method('send')
+				->will($this->returnValue($s3_response));
+
+		$s3->expects($this->once())
+				->method('batch')
+				->will($this->returnValue($s3));
+
+		// Shunt the task class so we can mock everything except the execute
+		$task = $this->getMock('Minion_Task_As3et_Deploy', array('get_asset_files','current_git_sha','write'));
+		$task->as3et($as3et);
+		$task->s3($s3);
+		$task->expects($this->any())
+				->method('current_git_sha')
+				->will($this->returnValue('abcdefg'));
+
+		$task->expects($this->any())
+				->method('get_asset_files')
+				->will($this->returnValue(array(
+					'css/foo.css' => self::test_data_path('assets/css/foo.css'),
+					'foo.js' => self::test_data_path('assets/css/foo.js'),
+				)));
+
+		try
+		{
+			$task->execute(array());
+		}
+		catch (As3et_Exception_DeployFailed $e)
+		{
+			return;
+		}
+
+		$this->fail('Expected As3et_Exception_DeployFailed was not thrown');
 	}
 
 }

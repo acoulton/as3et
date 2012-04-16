@@ -5,8 +5,8 @@ return array(
 	's3' => array(
 		'region' => NULL,
 		'bucket' => NULL,
-		'key'	 => 'YOUR_AWS_KEY',
-		'secret' => 'YOUR_AWS_SECRET',
+		'key'	 => Arr::get($_SERVER,'AWS_KEY','YOUR_AWS_KEY'),
+		'secret' => Arr::get($_SERVER,'AWS_SECRET','YOUR_AWS_SECRET'),
 	),
 	'blacklist' => array(
 	),

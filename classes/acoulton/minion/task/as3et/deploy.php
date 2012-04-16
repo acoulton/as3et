@@ -3,15 +3,58 @@
 class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 {
 	protected $_s3 = NULL;
-	
+
+	protected $_as3et = NULL;
+
 	protected $_git_sha = NULL;
-	
+
+	/**
+	 * Deploys all current asset files (respecting the configuration set in the
+	 * As3et configuration) to the appropriate S3 path and - if successful -
+	 * stores the current git revision sha for use in Asset URLs at render-time.
+	 *
+	 * @param array $config  Command line options
+	 */
 	public function execute(array $config)
 	{
-		// Get the current git sha, and write to disk
-		// List all 'asset' files
-		// Upload all asset files to S3
-		// 
+		$this->write('Uploading as3et files to S3 for SHA '.$this->current_git_sha());
+		$this->write('Storing in bucket '.Kohana::$config->load('as3et.s3.bucket'));
+
+		// Setup the S3 for batch operation
+		$this->s3()->batch();
+
+		// Get a list of asset files and upload them
+		$files = $this->get_asset_files();
+		$this->write(count($files).' as3et files to upload');
+		foreach ($files as $file => $disk_path)
+		{
+			$this->upload_file($file, $disk_path);
+		}
+
+		// Send the S3 batch
+		$this->write('Sending request to AWS S3');
+		$response = $this->s3()->send();
+
+		if ( ! $response->areOK())
+			throw new As3et_Exception_DeployFailed("Deployment Failed", $response);
+
+		$this->write('Deployment successful');
+
+		// Store the SHA for future
+		$this->as3et()->set_deploy_sha($this->current_git_sha());
+	}
+
+	/**
+	 * Wrapper for [Minion_CLI::write] to allow output suppression during unit
+	 * tests.
+	 *
+	 * @param string $text
+	 * @param string $foreground
+	 * @param string $background
+	 */
+	public function write($text, $foreground = NULL, $background = NULL)
+	{
+		Minion_CLI::write($text, $foreground, $background);
 	}
 
 	/**
@@ -36,6 +79,29 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 		}
 
 		return $this->_s3;
+	}
+
+	/**
+	 * Provides an As3et instance - allows injection of an instance (eg for testing).
+	 *
+	 * @param As3et $as3et  As3et instance to inject
+	 * @return As3et
+	 */
+	public function as3et($as3et = NULL)
+	{
+		// If an instance is provided, set it.
+		if ($as3et !== NULL)
+		{
+			$this->_as3et = $as3et;
+		}
+
+		// If no instance exists, create one.
+		if ($this->_as3et === NULL)
+		{
+			$this->_as3et = new As3et;
+		}
+
+		return $this->_as3et;
 	}
 
 	/**
@@ -96,7 +162,7 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 
 			// Recurse into arrays, or add the files to the list
 			if (is_array($value))
-			{				
+			{
 				$filtered += $this->filter_asset_files($value, $blacklist);
 			}
 			else
@@ -106,7 +172,7 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 				$filtered[$path] = $value;
 			}
 		}
-		
+
 		return $filtered;
 
 	}
@@ -153,7 +219,7 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 					'contentType' => $mime,
 					'fileUpload' => $disk_path,
 					'headers' => $config->get('asset_headers', array()),
-				));		
+				));
 	}
 
 }
