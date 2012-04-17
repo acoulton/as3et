@@ -21,7 +21,8 @@ class As3et_S3Test extends Unittest_TestCase
 		$s3_config = Kohana::$config->load('as3et');
 		$s3_config->set('s3', Arr::merge($s3_config->get('s3'), array(
 			'key' => 'key-foo',
-			'secret' => 'secret-foo'
+			'secret' => 'secret-foo',
+			'certificate_authority' => FALSE,
 		)));
 
 		// Create the S3 object
@@ -33,6 +34,6 @@ class As3et_S3Test extends Unittest_TestCase
 		$this->assertEquals('secret-foo', $s3->secret_key);
 	}
 
-	
+
 
 }

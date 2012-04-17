@@ -43,7 +43,8 @@ class ACoulton_As3et_S3
 			$config = Kohana::$config->load('as3et.s3');
 			$this->_s3 = new AmazonS3(array(
 				'key' => $config['key'],
-				'secret' => $config['secret']
+				'secret' => $config['secret'],
+				'certificate_authority' => $config['certificate_authority'],
 			));
 		}
 
