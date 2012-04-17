@@ -72,4 +72,5 @@ abstract class As3et_BaseCollectionTest extends Unittest_TestCase
 		$this->assertContains('data-foo="b"', $output);
 		$this->assertContains('media="print"', $output);
 	}
+	
 }

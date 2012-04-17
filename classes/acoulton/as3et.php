@@ -22,9 +22,22 @@ class ACoulton_As3et
 	 */
 	protected $_sha = NULL;
 
+	/**
+	 * Returns a singleton As3et instance for general use.
+	 * 
+	 * @staticvar string $instance
+	 * @return As3et
+	 */
 	public static function instance()
 	{
+		static $instance = NULL;
 
+		if ( ! $instance)
+		{
+			$instance = new As3et;
+		}
+
+		return $instance;
 	}
 
 	/**

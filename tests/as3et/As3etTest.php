@@ -138,5 +138,15 @@ class As3et_As3etTest extends Unittest_TestCase
 
 	}
 
+	public function test_instance_should_return_singleton()
+	{
+		$as3et = As3et::instance();
+
+		$as3et_2 = As3et::instance();
+
+		$this->assertInstanceOf('As3et', $as3et);
+		$this->assertSame($as3et, $as3et_2);
+	}
+
 
 }

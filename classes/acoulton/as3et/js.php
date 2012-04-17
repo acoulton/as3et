@@ -2,7 +2,7 @@
 
 /**
  * Class for working with javascript assets
- * 
+ *
  * @package    As3et
  * @category   Asset Handlers
  * @author     Andrew Coulton
@@ -17,10 +17,21 @@ class ACoulton_As3et_JS extends As3et_Collection
 	 */
 	protected $_file = NULL;
 
+	/**
+	 * Creates a new As3et_JS instance and associates with the singleton As3et
+	 * and the given file.
+	 *
+	 * @param string $file
+	 * @return As3et_JS
+	 */
+	public static function factory($file)
+	{
+		return new As3et_JS(As3et::instance(), $file);
+	}
 
 	/**
 	 * Creates a new As3et_JS instance
-	 * 
+	 *
 	 * @param As3et $as3et  An As3et instance
 	 * @param string $file  Relative path to the javascript file
 	 */
@@ -41,5 +52,20 @@ class ACoulton_As3et_JS extends As3et_Collection
 		$url = $this->as3et()->url($this->_file);
 		return HTML::script($url, $attributes);
 	}
-	
+
+	/**
+	 * Returns the filename associated with this instance
+	 * @param string $file
+	 * @return As3et_JS
+	 */
+	public function file($file = NULL)
+	{
+		if ($file === NULL)
+			return $this->_file;
+
+		$this->_file = $file;
+		return $this;
+	}
+
+
 }
