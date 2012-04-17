@@ -296,6 +296,24 @@ class As3et_DeployTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Verifies that the assets are uploaded with a public-read ACL
+	 *
+	 * @depends test_should_support_s3_injection
+	 */
+	public function test_should_upload_files_as_public_read()
+	{
+		// Mock S3
+		$task = new Minion_Task_As3et_Deploy;
+		$task->s3($this->_mock_s3_create_object(
+				$this->anything(),
+				$this->anything(),
+				new Constraint_ArrayKey_HasValue('acl', AmazonS3::ACL_PUBLIC),
+				TRUE));
+
+		$task->upload_file('css/foo.css', self::test_data_path().'/assets/css/foo.css');
+	}
+
+	/**
 	 * Verifies that the deploy task can have an As3et instance injected into it
 	 */
 	public function test_should_support_as3et_injection()

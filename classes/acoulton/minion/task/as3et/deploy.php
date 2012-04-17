@@ -218,6 +218,7 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 				array(
 					'contentType' => $mime,
 					'fileUpload' => $disk_path,
+					'acl' => AmazonS3::ACL_PUBLIC,
 					'headers' => $config->get('asset_headers', array()),
 				));
 	}
