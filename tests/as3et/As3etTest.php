@@ -49,7 +49,7 @@ class As3et_As3etTest extends Unittest_TestCase
 	 *
 	 * @dataProvider provider_url_should_be_prefixed_according_to_mode
 	 */
-	public function test_url_should_be_prefixed_according_to_mode($mode, $file, $expect_url)
+	public function test_url_should_be_prefixed_according_to_mode_and_sha($mode, $file, $expect_url, $sha = 'sha')
 	{
 		$config = Kohana::$config->load('as3et');
 		$config->set('mode', $mode);
@@ -57,14 +57,25 @@ class As3et_As3etTest extends Unittest_TestCase
 			'bucket' => 'foo',
 			'region' => 's3-eu-west-1.amazonaws.com'
 		)));
-		
+
 		$as3et = $this->getMock('As3et', array('current_sha'));
 		$as3et->expects($this->any())
 				->method('current_sha')
-				->will($this->returnValue('sha'));
+				->will($this->returnValue($sha));
 
 		$this->assertEquals($expect_url, $as3et->url($file));
 
+	}
+
+	/**
+	 * Specialisation of test_url_should_be_prefixed_according_to_mode_and_sha -
+	 * we should always fall back to serving locally if there is no deployed
+	 * version on S3.
+	 */
+	public function test_url_should_provide_local_url_if_no_sha()
+	{
+		$this->test_url_should_be_prefixed_according_to_mode_and_sha(
+				As3et::MODE_S3, 'foo.bar', 'assets/foo.bar', NULL);
 	}
 
 	/**
@@ -93,9 +104,39 @@ class As3et_As3etTest extends Unittest_TestCase
 		Kohana::$config->load('as3et')->set('mode', As3et::MODE_S3);
 		Request::initial()->secure($initial_ssl);
 
-		$as3et = new As3et;
-		
+		$as3et = $this->getMock('As3et', array('current_sha'));
+		$as3et->expects($this->any())
+				->method('current_sha')
+				->will($this->returnValue('sha'));
+
 		$this->assertEquals($expect_scheme, parse_url($as3et->url('foo.bar'), PHP_URL_SCHEME));
 	}
+
+	/**
+	 * Tests that the revision is saved and loaded by As3et in the expected file
+	 */
+	public function test_should_save_and_load_revision_sha()
+	{
+		// Configure
+		$file = sys_get_temp_dir().DIRECTORY_SEPARATOR.'as3et-test-rev'.uniqid().'.php';
+		$sha = uniqid();
+		Kohana::$config->load('as3et')->set('revision_file', $file);
+
+		// Create an As3et instance and save the SHA
+		$as3et = new As3et;
+		$as3et->set_deploy_sha($sha);
+
+		// Create a second instance to validate
+		$as3et_2 = new As3et;
+		$this->assertEquals($sha, $as3et_2->current_sha(), "Failed to load expected SHA from $file");
+
+		// Clean up after execution - here so that it won't be unlinked on failure
+		if (file_exists($file))
+		{
+			unlink($file);
+		}
+
+	}
+
 
 }

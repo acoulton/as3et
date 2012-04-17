@@ -17,6 +17,11 @@ class ACoulton_As3et
 	 */
 	protected $_config = NULL;
 
+	/**
+	 * Instance storage of the current SHA
+	 */
+	protected $_sha = NULL;
+
 	public static function instance()
 	{
 
@@ -44,24 +49,54 @@ class ACoulton_As3et
 		if (strpos($url, '://'))
 			return $url;
 
-		// In local mode, prefix with assets and return
-		if ($this->_config['mode'] === self::MODE_LOCAL)
+		$sha = $this->current_sha();
+
+		// In local mode or if there's no SHA, prefix with assets and return
+		if (($this->_config['mode'] === self::MODE_LOCAL) OR ($sha === NULL))
 			return 'assets/'.$url;
 
 		// The S3 URL is the bucket and host, plus the current deployed SHA
 		$protocol = Request::initial()->secure() ? 'https://' : 'http://';
 		$host = $this->_config['s3']['bucket'].'.'.$this->_config['s3']['region'];
-		return $protocol.$host.'/'.$this->current_sha().'/'.$url;
+		return $protocol.$host.'/'.$sha.'/'.$url;
 	}
 
+	/**
+	 * Sets the current SHA and stores it to disk - this SHA is used as part of
+	 * the path to achieve atomic and instant deployment of assets
+	 *
+	 * @param string $sha
+	 */
 	public function set_deploy_sha($sha)
 	{
-		
+		$file = $this->_config['revision_file'];
+
+		// Create the path if required
+		$path = dirname($file);
+		if ( ! file_exists($path))
+		{
+			mkdir($path, 0664, TRUE);
+		}
+
+		// Output to a parsable PHP file (so APC will cache it for us)
+		file_put_contents($file, '<?php return '.var_export($sha, TRUE).';');
+		$this->_sha = $sha;
 	}
 
+	/**
+	 * Returns the current deploy SHA
+	 *
+	 * @return string
+	 */
 	public function current_sha()
-	{		
-		return '';
+	{
+		// Load the revision SHA from disk
+		if (($this->_sha === NULL) AND (file_exists($this->_config['revision_file'])))
+		{
+			$this->_sha = include($this->_config['revision_file']);
+		}
+
+		return $this->_sha;
 	}
-	
+
 }
