@@ -213,6 +213,15 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 			$mime = $config->get('default_mime_type');
 		}
 
+		/*
+		 * Kohana's standard mime-type is incorrect for application/javascript
+		 * and can't be overwritten by higher level config
+		 */
+		if ($mime == 'application/x-javascript')
+		{
+			$mime = 'application/javascript';
+		}
+
 		$result = $this->s3()
 			->create_object(
 				$config['s3']['bucket'],

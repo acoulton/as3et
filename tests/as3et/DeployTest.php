@@ -231,7 +231,8 @@ class As3et_DeployTest extends Unittest_TestCase
 		$test_path = self::test_data_path();
 		return array(
 			array('css.tmp', $test_path.'/assets/css.tmp','application/octet-stream'),
-			array('css/foo.css', $test_path.'/assets/css/foo.css','text/css')
+			array('css/foo.css', $test_path.'/assets/css/foo.css','text/css'),
+			array('js/foo.js', $test_path.'assets/js/foo.js', 'application/javascript')
 		);
 	}
 
