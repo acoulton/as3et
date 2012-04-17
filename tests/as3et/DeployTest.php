@@ -352,7 +352,12 @@ class As3et_DeployTest extends Unittest_TestCase
 					->method('areOK')
 					->will($this->returnValue(TRUE));
 
+		// Batch has to be called at beginning, but also before send
 		$s3->expects($this->at(0))
+				->method('batch')
+				->will($this->returnValue($s3));
+
+		$s3->expects($this->exactly(2))
 				->method('batch')
 				->will($this->returnValue($s3));
 
@@ -408,7 +413,8 @@ class As3et_DeployTest extends Unittest_TestCase
 				->method('send')
 				->will($this->returnValue($s3_response));
 
-		$s3->expects($this->once())
+		// Batch has to be called at beginning and end
+		$s3->expects($this->exactly(2))
 				->method('batch')
 				->will($this->returnValue($s3));
 

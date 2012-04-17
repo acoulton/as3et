@@ -33,7 +33,7 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 
 		// Send the S3 batch
 		$this->write('Sending request to AWS S3');
-		$response = $this->s3()->send();
+		$response = $this->s3()->batch()->send();
 
 		if ( ! $response->areOK())
 			throw new As3et_Exception_DeployFailed("Deployment Failed", $response);
