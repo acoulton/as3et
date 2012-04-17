@@ -167,6 +167,26 @@ class As3et_DeployTest extends Unittest_TestCase
 	}
 
 	/**
+	 * Verifies that on a windows machine, the asset filenames are converted to
+	 * unix style directory separators prior to uploading to S3
+	 */
+	public function test_filter_should_convert_directory_separators_to_unix()
+	{
+		$task = new Separator_Test_Minion_Task_As3et_Deploy();
+
+		$files = $task->filter_asset_files(array(
+			'assets\foo.js' => '\assets\foo.js',
+			'assets\css\foo.css' => '\assets\css\foo.css'
+		), array());
+
+		$this->assertArrayHasKey('foo.js', $files);
+		$this->assertArrayHasKey('css/foo.css', $files);
+		$this->assertEquals('\assets\foo.js', $files['foo.js']);
+		$this->assertEquals('\assets\css\foo.css', $files['css/foo.css']);
+	}
+
+
+	/**
 	 * Verify that the task can load the current HEAD sha reference
 	 */
 	public function test_should_get_current_git_revision()
@@ -513,4 +533,15 @@ class Constraint_ArrayKey_HasValue extends PHPUnit_Framework_Constraint
     {
         return 'an array ' . $this->toString().' (got '.PHPUnit_Util_Type::export($other).')';
     }
+}
+
+/**
+ * Used to expose the filter method so we can test that it converts directory
+ * separators on windows.
+ */
+class Separator_Test_Minion_Task_As3et_Deploy extends Minion_Task_As3et_Deploy
+{
+	public function filter_asset_files($files, $blacklist) {
+		return parent::filter_asset_files($files, $blacklist);
+	}
 }

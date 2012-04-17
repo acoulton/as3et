@@ -169,6 +169,8 @@ class ACoulton_Minion_Task_As3et_Deploy extends Minion_Task
 			{
 				// Strip the 'assets/' prefix from the path key
 				$path = substr($path, 7);
+				// Replace windows directory separators
+				$path = str_replace('\\', '/', $path);
 				$filtered[$path] = $value;
 			}
 		}
